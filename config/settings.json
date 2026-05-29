@@ -1,5 +1,5 @@
 {
-  "provider": "gemini",
+  "provider": "local",
   "local": {
     "model_path": "models/model.gguf",
     "n_ctx": 4096,

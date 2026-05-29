@@ -76,80 +76,54 @@ def _get_llm() -> Any:
 
 def _get_retrieval() -> Any:
     """Lazy-import and cache the retrieval helpers.
-
-    The retrieval module is expected to expose:
-        - ``ingest_pdf(file_path: str) -> int``
-        - ``list_documents() -> List[Dict]``
-        - ``delete_document(doc_id: str) -> int``
-        - ``retrieve_chunks(query: str, top_k: int, min_score: float) -> List[Dict]``
-        - ``get_collection_count() -> int``
-        - ``get_embedding_model_name() -> str``
-        - ``preload_embedding_model() -> None``
-
-    If the module is not yet implemented a lightweight stub is used so the
-    API can still start.
+    
+    This acts as a facade uniting the ingest and retrieve modules.
     """
     global _retrieval_mod
     if _retrieval_mod is not None:
         return _retrieval_mod
 
-    try:
-        from backend import retrieval as _mod  # type: ignore[import-untyped]
-        _retrieval_mod = _mod
-        return _retrieval_mod
-    except ImportError:
-        pass
+    from backend import ingest
+    from backend import retrieve
 
-    try:
-        import retrieval as _mod  # type: ignore[import-untyped]
-        _retrieval_mod = _mod
-        return _retrieval_mod
-    except ImportError:
-        pass
-
-    # ----- Minimal stub so the server boots even without retrieval.py ------
-    class _Stub:
-        """Placeholder when the real retrieval module is unavailable."""
-
+    class _Facade:
         @staticmethod
         def ingest_pdf(file_path: str) -> int:
-            logger.warning("retrieval.ingest_pdf stub called — no real ingestion performed.")
-            return 0
+            res = ingest.ingest_pdf(Path(file_path))
+            return res.get("chunks_added", 0)
 
         @staticmethod
         def list_documents() -> List[Dict[str, Any]]:
-            logger.warning("retrieval.list_documents stub called.")
-            return []
+            return ingest.list_documents()
 
         @staticmethod
         def delete_document(doc_id: str) -> int:
-            logger.warning("retrieval.delete_document stub called.")
-            return 0
+            return ingest.delete_document(doc_id)
 
         @staticmethod
         def retrieve_chunks(
             query: str, top_k: int = 5, min_score: float = 0.25
         ) -> List[Dict[str, Any]]:
-            logger.warning("retrieval.retrieve_chunks stub called.")
-            return []
+            # retrieve internally filters score < 0.25 already
+            return retrieve.retrieve(query, top_k=top_k)
 
         @staticmethod
         def get_collection_count() -> int:
-            return 0
+            try:
+                collection = ingest.get_chroma_collection()
+                return collection.count()
+            except Exception:
+                return 0
 
         @staticmethod
         def get_embedding_model_name() -> str:
-            return "none (stub)"
+            return "BAAI/bge-small-en-v1.5"
 
         @staticmethod
         def preload_embedding_model() -> None:
-            logger.warning("retrieval.preload_embedding_model stub called.")
+            ingest.get_embedding_model()
 
-    logger.warning(
-        "Retrieval module not found — using stub. "
-        "Upload/search features will be non-functional."
-    )
-    _retrieval_mod = _Stub()
+    _retrieval_mod = _Facade()
     return _retrieval_mod
 
 
