@@ -1,0 +1,32 @@
+{
+  "provider": "gemini",
+  "local": {
+    "model_path": "models/model.gguf",
+    "n_ctx": 4096,
+    "n_threads": 6,
+    "n_gpu_layers": 0,
+    "temperature": 0.7
+  },
+  "gemini": {
+    "api_key": "",
+    "model": "gemini-1.5-flash"
+  },
+  "openrouter": {
+    "api_key": "",
+    "model": "mistralai/mistral-7b-instruct:free"
+  },
+  "fireworks": {
+    "api_key": "",
+    "model": "accounts/fireworks/models/llama-v3p1-8b-instruct"
+  },
+  "grok": {
+    "api_key": "",
+    "model": "grok-beta"
+  },
+  "retrieval": {
+    "top_k": 5,
+    "min_score": 0.25
+  },
+  "chunk_size": 500,
+  "chunk_overlap": 50
+}
